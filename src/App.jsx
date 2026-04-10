@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, useMemo } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -6,8 +6,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
 } from "recharts";
 
 /* ─── GLOBAL STYLES ─────────────────────────────────────────── */
@@ -21,15 +19,19 @@ const G = () => (
       --accent:#58a6ff;--a2:#1f6feb;
       --green:#3fb950;--g2:#238636;
       --red:#f85149;--yellow:#d29922;--purple:#bc8cff;--cyan:#79c0ff;
-      --font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace
+      --font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace;
+      --sidebar-w:214px;
     }
-    html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;overflow:hidden}
-    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#444c56;border-radius:9px}
+    html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#444c56;border-radius:9px}
     input,select,textarea{font-family:var(--font);background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 11px;font-size:13px;width:100%;outline:none}
     input:focus,select:focus,textarea:focus{border-color:var(--accent)}
     input[type=date]{color-scheme:dark}
     button{font-family:var(--font);cursor:pointer;border:none;outline:none}
     table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:9px 13px}
+    @media(max-width:768px){
+      td,th{padding:8px 10px}
+    }
   `}</style>
 );
 
@@ -501,6 +503,7 @@ function Provider({ children }) {
   const [data, setData] = useState(D);
   const [page, setPage] = useState("dashboard");
   const [toast, setToast] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user] = useState({ name: "Admin User", role: "admin" });
 
   const showToast = (msg, type = "success") => {
@@ -517,10 +520,24 @@ function Provider({ children }) {
       ...d,
       [k]: d[k].map((x) => (x.id === id ? { ...x, ...patch } : x)),
     }));
+  const navigate = (p) => {
+    setPage(p);
+    setSidebarOpen(false);
+  };
 
   return (
     <Ctx.Provider
-      value={{ data, page, setPage, showToast, addItem, updateItem, user }}
+      value={{
+        data,
+        page,
+        setPage: navigate,
+        showToast,
+        addItem,
+        updateItem,
+        user,
+        sidebarOpen,
+        setSidebarOpen,
+      }}
     >
       <G />
       {children}
@@ -529,7 +546,7 @@ function Provider({ children }) {
           style={{
             position: "fixed",
             bottom: 20,
-            right: 20,
+            right: 16,
             zIndex: 999,
             background:
               toast.type === "error"
@@ -541,7 +558,8 @@ function Provider({ children }) {
             display: "flex",
             alignItems: "center",
             gap: 10,
-            minWidth: 220,
+            minWidth: 200,
+            maxWidth: "calc(100vw - 32px)",
             backdropFilter: "blur(8px)",
           }}
         >
@@ -642,8 +660,9 @@ const Stat = ({
       background: "var(--bg2)",
       border: "1px solid var(--border)",
       borderRadius: 12,
-      padding: "16px 18px",
+      padding: "14px 16px",
       cursor: onClick ? "pointer" : "default",
+      minWidth: 0,
     }}
     onMouseEnter={(e) =>
       onClick && (e.currentTarget.style.borderColor = "var(--border2)")
@@ -656,7 +675,7 @@ const Stat = ({
       style={{
         display: "flex",
         justifyContent: "space-between",
-        marginBottom: 8,
+        marginBottom: 6,
       }}
     >
       <span
@@ -670,9 +689,17 @@ const Stat = ({
       >
         {label}
       </span>
-      <span style={{ fontSize: 20, opacity: 0.8 }}>{icon}</span>
+      <span style={{ fontSize: 18, opacity: 0.8 }}>{icon}</span>
     </div>
-    <div style={{ fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>
+    <div
+      style={{
+        fontSize: 22,
+        fontWeight: 700,
+        color,
+        lineHeight: 1,
+        wordBreak: "break-all",
+      }}
+    >
       {value}
     </div>
     {sub && (
@@ -727,6 +754,7 @@ const Btn = ({
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
+        whiteSpace: "nowrap",
         ...style,
       }}
       onMouseEnter={(e) =>
@@ -785,9 +813,10 @@ const Inp = ({
   </div>
 );
 
+/* ─── RESPONSIVE TABLE ──────────────────────────────────────── */
 const Tbl = ({ cols, rows = [], onRow }) => (
-  <div style={{ overflowX: "auto" }}>
-    <table>
+  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+    <table style={{ minWidth: "max-content", width: "100%" }}>
       <thead>
         <tr
           style={{
@@ -863,6 +892,7 @@ const Tbl = ({ cols, rows = [], onRow }) => (
   </div>
 );
 
+/* ─── MODAL ─────────────────────────────────────────────────── */
 const Modal = ({ title, children, onClose, footer, width = 580 }) => (
   <div
     style={{
@@ -874,6 +904,7 @@ const Modal = ({ title, children, onClose, footer, width = 580 }) => (
       alignItems: "center",
       justifyContent: "center",
       padding: 16,
+      overflowY: "auto",
     }}
     onClick={(e) => e.target === e.currentTarget && onClose()}
   >
@@ -887,6 +918,7 @@ const Modal = ({ title, children, onClose, footer, width = 580 }) => (
         maxHeight: "90vh",
         display: "flex",
         flexDirection: "column",
+        margin: "auto",
       }}
     >
       <div
@@ -907,6 +939,7 @@ const Modal = ({ title, children, onClose, footer, width = 580 }) => (
             color: "var(--text2)",
             fontSize: 22,
             lineHeight: 1,
+            padding: "0 4px",
           }}
         >
           ×
@@ -923,6 +956,7 @@ const Modal = ({ title, children, onClose, footer, width = 580 }) => (
             gap: 8,
             background: "var(--bg3)",
             borderRadius: "0 0 16px 16px",
+            flexShrink: 0,
           }}
         >
           {footer}
@@ -995,46 +1029,64 @@ const TITLES = {
 };
 
 function Sidebar() {
-  const { page, setPage, user } = useApp();
-  return (
+  const { page, setPage, user, sidebarOpen, setSidebarOpen } = useApp();
+  const content = (
     <div
       style={{
-        width: 214,
+        width: "var(--sidebar-w)",
         background: "var(--bg2)",
         borderRight: "1px solid var(--border)",
         display: "flex",
         flexDirection: "column",
-        flexShrink: 0,
+        height: "100%",
       }}
     >
       <div
         style={{
           padding: "18px 16px 14px",
           borderBottom: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <div
-          style={{
-            fontFamily: "var(--mono)",
-            fontWeight: 700,
-            fontSize: 16,
-            color: "var(--accent)",
-            letterSpacing: "-.03em",
-          }}
-        >
-          CLINIVANTA
+        <div>
+          <div
+            style={{
+              fontFamily: "var(--mono)",
+              fontWeight: 700,
+              fontSize: 16,
+              color: "var(--accent)",
+              letterSpacing: "-.03em",
+            }}
+          >
+            CLINIVANTA
+          </div>
+          <div
+            style={{
+              fontSize: 9,
+              color: "var(--text3)",
+              marginTop: 2,
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+            }}
+          >
+            Hospital Management
+          </div>
         </div>
-        <div
+        <button
+          onClick={() => setSidebarOpen(false)}
           style={{
-            fontSize: 9,
-            color: "var(--text3)",
-            marginTop: 2,
-            letterSpacing: ".1em",
-            textTransform: "uppercase",
+            background: "none",
+            color: "var(--text2)",
+            fontSize: 20,
+            lineHeight: 1,
+            display: "none",
           }}
+          className="sidebar-close"
         >
-          Hospital Management
-        </div>
+          ×
+        </button>
       </div>
       <nav style={{ padding: "10px 7px", flex: 1, overflowY: "auto" }}>
         {NAV.map((n) => {
@@ -1048,7 +1100,7 @@ function Sidebar() {
                 alignItems: "center",
                 gap: 9,
                 width: "100%",
-                padding: "7px 10px",
+                padding: "8px 10px",
                 borderRadius: 8,
                 background: a ? "var(--bg3)" : "transparent",
                 color: a ? "var(--text)" : "var(--text2)",
@@ -1093,6 +1145,157 @@ function Sidebar() {
       </div>
     </div>
   );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div
+        style={{ display: "flex", flexShrink: 0 }}
+        className="desktop-sidebar"
+      >
+        {content}
+      </div>
+      {/* Mobile drawer overlay */}
+      {sidebarOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex" }}
+          onClick={(e) => e.target === e.currentTarget && setSidebarOpen(false)}
+        >
+          <div
+            style={{
+              background: "rgba(0,0,0,.6)",
+              position: "absolute",
+              inset: 0,
+            }}
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              display: "flex",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                width: "var(--sidebar-w)",
+                background: "var(--bg2)",
+                borderRight: "1px solid var(--border)",
+                display: "flex",
+                flexDirection: "column",
+                height: "100vh",
+              }}
+            >
+              <div
+                style={{
+                  padding: "18px 16px 14px",
+                  borderBottom: "1px solid var(--border)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontWeight: 700,
+                      fontSize: 16,
+                      color: "var(--accent)",
+                      letterSpacing: "-.03em",
+                    }}
+                  >
+                    CLINIVANTA
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      color: "var(--text3)",
+                      marginTop: 2,
+                      letterSpacing: ".1em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Hospital Management
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  style={{
+                    background: "none",
+                    color: "var(--text2)",
+                    fontSize: 24,
+                    lineHeight: 1,
+                    padding: "0 4px",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <nav style={{ padding: "10px 7px", flex: 1, overflowY: "auto" }}>
+                {NAV.map((n) => {
+                  const a = page === n.id;
+                  return (
+                    <button
+                      key={n.id}
+                      onClick={() => setPage(n.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        width: "100%",
+                        padding: "10px 10px",
+                        borderRadius: 8,
+                        background: a ? "var(--bg3)" : "transparent",
+                        color: a ? "var(--text)" : "var(--text2)",
+                        fontWeight: a ? 600 : 400,
+                        fontSize: 13,
+                        marginBottom: 2,
+                        textAlign: "left",
+                        border: a
+                          ? "1px solid var(--border)"
+                          : "1px solid transparent",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span style={{ fontSize: 14, opacity: a ? 1 : 0.55 }}>
+                        {n.icon}
+                      </span>
+                      {n.label}
+                    </button>
+                  );
+                })}
+              </nav>
+              <div
+                style={{
+                  padding: "12px 14px",
+                  borderTop: "1px solid var(--border)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <Avatar name={user.name} size={30} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>
+                    Admin User
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--text3)" }}>
+                    Administrator
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @media(min-width:769px){ .mobile-menu-btn{display:none!important} }
+        @media(max-width:768px){ .desktop-sidebar{display:none!important} }
+      `}</style>
+    </>
+  );
 }
 
 /* ─── DASHBOARD ─────────────────────────────────────────────── */
@@ -1109,21 +1312,22 @@ function Dashboard() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
         flexDirection: "column",
-        gap: 18,
+        gap: 16,
       }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 14,
-        }}
-      >
+      <style>{`
+        .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+        .dash-mid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .dash-bot{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+        @media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)}.dash-mid{grid-template-columns:1fr}.dash-bot{grid-template-columns:1fr 1fr}}
+        @media(max-width:520px){.stat-grid{grid-template-columns:repeat(2,1fr)}.dash-bot{grid-template-columns:1fr}}
+      `}</style>
+      <div className="stat-grid">
         <Stat
           label="Total Patients"
           value={data.patients.length}
@@ -1158,7 +1362,7 @@ function Dashboard() {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div className="dash-mid">
         <Card>
           <div
             style={{
@@ -1233,7 +1437,6 @@ function Dashboard() {
             );
           })}
         </Card>
-
         <Card>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 14 }}>
             Monthly Revenue
@@ -1263,9 +1466,7 @@ function Dashboard() {
         </Card>
       </div>
 
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}
-      >
+      <div className="dash-bot">
         <Card>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>
             Doctor Roster
@@ -1312,7 +1513,6 @@ function Dashboard() {
             </div>
           ))}
         </Card>
-
         <Card>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>
             Stock Alerts
@@ -1353,7 +1553,6 @@ function Dashboard() {
             ))
           )}
         </Card>
-
         <Card>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>
             Quick Stats
@@ -1436,39 +1635,46 @@ function Patients() {
   if (selected) {
     const appts = data.appointments.filter((a) => a.patientId === selected.id);
     return (
-      <div style={{ padding: 20, overflowY: "auto", flex: 1 }}>
+      <div style={{ padding: 16, overflowY: "auto", flex: 1 }}>
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
-            marginBottom: 18,
+            marginBottom: 16,
           }}
         >
           <Btn size="sm" color="ghost" onClick={() => setSelected(null)}>
             ← Back
           </Btn>
-          <h2 style={{ fontSize: 16, fontWeight: 700, flex: 1 }}>
+          <h2
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              flex: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {selected.name}
           </h2>
           <span
             style={{
               fontFamily: "var(--mono)",
-              fontSize: 12,
+              fontSize: 11,
               color: "var(--text3)",
+              flexShrink: 0,
             }}
           >
             {selected.mrn}
           </span>
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "270px 1fr",
-            gap: 16,
-            alignItems: "start",
-          }}
-        >
+        <style>{`
+          .patient-detail{display:grid;grid-template-columns:270px 1fr;gap:14px;align-items:start}
+          @media(max-width:768px){.patient-detail{grid-template-columns:1fr}}
+        `}</style>
+        <div className="patient-detail">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <Card>
               <div
@@ -1480,7 +1686,7 @@ function Patients() {
                   marginBottom: 14,
                 }}
               >
-                <Avatar name={selected.name} size={60} />
+                <Avatar name={selected.name} size={56} />
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>
                     {selected.name}
@@ -1529,7 +1735,15 @@ function Patients() {
                     >
                       {ic}
                     </span>
-                    <span style={{ fontSize: 12, lineHeight: 1.4 }}>{v}</span>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        lineHeight: 1.4,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {v}
+                    </span>
                   </div>
                 ))}
             </Card>
@@ -1608,7 +1822,7 @@ function Patients() {
                     >
                       {a.date}
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 500 }}>
                         {a.complaint}
                       </div>
@@ -1630,7 +1844,7 @@ function Patients() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -1638,8 +1852,15 @@ function Patients() {
         gap: 14,
       }}
     >
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <div style={{ position: "relative", flex: 1, maxWidth: 380 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
           <span
             style={{
               position: "absolute",
@@ -1692,17 +1913,7 @@ function Patients() {
                 </div>
               ),
             },
-            {
-              label: "Contact",
-              render: (r) => (
-                <div>
-                  <div>{r.phone}</div>
-                  <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                    {r.email}
-                  </div>
-                </div>
-              ),
-            },
+            { label: "Phone", render: (r) => <span>{r.phone}</span> },
             {
               label: "Blood",
               render: (r) => <Badge color="blue">{r.blood}</Badge>,
@@ -1717,14 +1928,6 @@ function Patients() {
                     None
                   </span>
                 ),
-            },
-            {
-              label: "Insurance",
-              render: (r) => (
-                <span style={{ fontSize: 12, color: "var(--text2)" }}>
-                  {r.insurance || "—"}
-                </span>
-              ),
             },
           ]}
           rows={filtered}
@@ -1759,9 +1962,8 @@ function Patients() {
             </>
           }
         >
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
-          >
+          <style>{`.reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.reg-grid{grid-template-columns:1fr}}`}</style>
+          <div className="reg-grid">
             <Inp
               label="Full Name"
               value={form.name}
@@ -1869,7 +2071,7 @@ function Appointments() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -1877,51 +2079,59 @@ function Appointments() {
         gap: 14,
       }}
     >
+      <style>{`
+        .appt-filters{display:flex;gap:8px;flexWrap:wrap;align-items:center}
+        .filter-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;flex:1}
+        .filter-scroll::-webkit-scrollbar{height:0}
+      `}</style>
       <div
         style={{
           display: "flex",
           gap: 8,
-          flexWrap: "wrap",
           alignItems: "center",
+          flexWrap: "wrap",
         }}
       >
         <input
           type="date"
           value={dateF}
           onChange={(e) => setDateF(e.target.value)}
-          style={{ width: "auto" }}
+          style={{ width: "auto", minWidth: 130 }}
         />
-        {[
-          "all",
-          "scheduled",
-          "confirmed",
-          "checked_in",
-          "in_progress",
-          "completed",
-          "cancelled",
-        ].map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusF(s)}
-            style={{
-              padding: "5px 12px",
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 500,
-              cursor: "pointer",
-              background: statusF === s ? "var(--a2)" : "var(--bg3)",
-              color: statusF === s ? "#fff" : "var(--text2)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            {s === "all"
-              ? "All"
-              : s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-          </button>
-        ))}
-        <div style={{ flex: 1 }} />
+        <div className="filter-scroll">
+          {[
+            "all",
+            "scheduled",
+            "confirmed",
+            "checked_in",
+            "in_progress",
+            "completed",
+            "cancelled",
+          ].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusF(s)}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: "pointer",
+                background: statusF === s ? "var(--a2)" : "var(--bg3)",
+                color: statusF === s ? "#fff" : "var(--text2)",
+                border: "1px solid var(--border)",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {s === "all"
+                ? "All"
+                : s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+            </button>
+          ))}
+        </div>
         <Btn color="green" onClick={() => setShowForm(true)}>
-          + Book Appointment
+          + Book
         </Btn>
       </div>
       <Card style={{ padding: 0, overflow: "hidden" }}>
@@ -1967,43 +2177,14 @@ function Appointments() {
               label: "Doctor",
               render: (r) => {
                 const d = data.doctors.find((x) => x.id === r.doctorId);
-                return (
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{d?.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                      {d?.spec}
-                    </div>
-                  </div>
-                );
+                return <span style={{ fontSize: 12 }}>{d?.name}</span>;
               },
-            },
-            {
-              label: "Type",
-              render: (r) => <Badge color="gray">{r.type}</Badge>,
-            },
-            {
-              label: "Complaint",
-              render: (r) => (
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: "var(--text2)",
-                    maxWidth: 180,
-                    display: "block",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {r.complaint}
-                </span>
-              ),
             },
             { label: "Status", render: (r) => <SBadge s={r.status} /> },
             {
               label: "Actions",
               render: (r) => (
-                <div style={{ display: "flex", gap: 4 }}>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                   {FLOW[r.status]?.map((ns) => (
                     <Btn
                       key={ns}
@@ -2085,13 +2266,8 @@ function Appointments() {
                 label: `${d.name} — ${d.spec} ($${d.fee})`,
               }))}
             />
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 12,
-              }}
-            >
+            <style>{`.appt-dt{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:400px){.appt-dt{grid-template-columns:1fr}}`}</style>
+            <div className="appt-dt">
               <Inp
                 label="Date"
                 value={form.date}
@@ -2166,7 +2342,7 @@ function Queue() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -2174,13 +2350,8 @@ function Queue() {
         gap: 16,
       }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 14,
-        }}
-      >
+      <style>{`.q-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}@media(max-width:600px){.q-stats{grid-template-columns:repeat(2,1fr)}}`}</style>
+      <div className="q-stats">
         <Stat label="Total Today" value={todayA.length} icon="📋" />
         <Stat
           label="In Progress"
@@ -2215,6 +2386,7 @@ function Queue() {
                 alignItems: "center",
                 gap: 8,
                 marginBottom: 12,
+                flexWrap: "wrap",
               }}
             >
               <span style={{ fontSize: 18 }}>🩺</span>
@@ -2240,6 +2412,7 @@ function Queue() {
                       borderRadius: 8,
                       background: isAct ? "rgba(88,166,255,.07)" : "var(--bg3)",
                       border: `1px solid ${isAct ? "rgba(88,166,255,.3)" : "var(--border)"}`,
+                      flexWrap: "wrap",
                     }}
                   >
                     <div
@@ -2260,7 +2433,7 @@ function Queue() {
                     >
                       #{a.token}
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: 120 }}>
                       <div style={{ fontWeight: 500, fontSize: 13 }}>
                         {p?.name}
                       </div>
@@ -2340,7 +2513,6 @@ function Records() {
   const F = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const FV = (k, v) =>
     setForm((f) => ({ ...f, vitals: { ...f.vitals, [k]: v } }));
-
   const sampleRecords = [
     {
       id: "mr1",
@@ -2349,8 +2521,7 @@ function Records() {
       date: TODAY,
       complaint: "Chest pain and shortness of breath",
       diagnosis: "Stable Angina, Hypertension Stage 2",
-      treatment:
-        "Atorvastatin 40mg OD, Metoprolol 25mg BD, Amlodipine 5mg OD. Lifestyle modifications.",
+      treatment: "Atorvastatin 40mg OD, Metoprolol 25mg BD, Amlodipine 5mg OD.",
       vitals: {
         temp: 36.8,
         bp: "148/92",
@@ -2367,8 +2538,7 @@ function Records() {
       date: TODAY,
       complaint: "Fever and persistent cough",
       diagnosis: "Community-Acquired Pneumonia (mild)",
-      treatment:
-        "Amoxicillin-Clavulanate 625mg TID × 7 days, Paracetamol PRN, rest.",
+      treatment: "Amoxicillin-Clavulanate 625mg TID × 7 days.",
       vitals: {
         temp: 38.2,
         bp: "118/76",
@@ -2385,8 +2555,7 @@ function Records() {
       date: "2025-01-20",
       complaint: "Diabetes follow-up",
       diagnosis: "Type 2 Diabetes Mellitus — improving",
-      treatment:
-        "Metformin 1000mg BD, dietary counselling, repeat HbA1c in 3 months.",
+      treatment: "Metformin 1000mg BD, dietary counselling.",
       vitals: {
         temp: 36.5,
         bp: "132/84",
@@ -2402,7 +2571,7 @@ function Records() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -2445,22 +2614,6 @@ function Records() {
                   </div>
                 );
               },
-            },
-            {
-              label: "Doctor",
-              render: (r) => {
-                const d = data.doctors.find((x) => x.id === r.doctorId);
-                return <span>{d?.name || "—"}</span>;
-              },
-            },
-            {
-              label: "Complaint",
-              render: (r) => (
-                <span style={{ fontSize: 12, color: "var(--text2)" }}>
-                  {r.complaint}
-                </span>
-              ),
-              wrap: true,
             },
             {
               label: "Diagnosis",
@@ -2518,13 +2671,8 @@ function Records() {
           }
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 12,
-              }}
-            >
+            <style>{`.rec-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}@media(max-width:520px){.rec-top{grid-template-columns:1fr}}.vitals-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}@media(max-width:600px){.vitals-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:380px){.vitals-grid{grid-template-columns:repeat(2,1fr)}}`}</style>
+            <div className="rec-top">
               <Inp
                 label="Patient"
                 value={form.patientId}
@@ -2571,13 +2719,7 @@ function Records() {
               >
                 Vitals
               </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(6,1fr)",
-                  gap: 8,
-                }}
-              >
+              <div className="vitals-grid">
                 <Inp
                   label="Temp °C"
                   value={form.vitals.temp}
@@ -2671,7 +2813,7 @@ function Doctors() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -2687,7 +2829,7 @@ function Doctors() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))",
+          gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))",
           gap: 14,
         }}
       >
@@ -2696,7 +2838,7 @@ function Doctors() {
             (a) => a.doctorId === d.id && a.date === TODAY,
           ).length;
           return (
-            <Card key={d.id} hover>
+            <Card key={d.id}>
               <div
                 style={{
                   display: "flex",
@@ -2707,8 +2849,8 @@ function Doctors() {
               >
                 <div
                   style={{
-                    width: 48,
-                    height: 48,
+                    width: 44,
+                    height: 44,
                     borderRadius: "50%",
                     background: d.available
                       ? "rgba(63,185,80,.12)"
@@ -2717,14 +2859,24 @@ function Doctors() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 22,
+                    fontSize: 20,
                     flexShrink: 0,
                   }}
                 >
                   🩺
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{d.name}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {d.name}
+                  </div>
                   <div
                     style={{
                       fontSize: 12,
@@ -2811,9 +2963,8 @@ function Doctors() {
             </>
           }
         >
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
-          >
+          <style>{`.doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:420px){.doc-grid{grid-template-columns:1fr}}`}</style>
+          <div className="doc-grid">
             <Inp
               label="Full Name"
               value={form.name}
@@ -2887,7 +3038,7 @@ function Billing() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -2895,13 +3046,8 @@ function Billing() {
         gap: 14,
       }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 14,
-        }}
-      >
+      <style>{`.bill-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}@media(max-width:600px){.bill-stats{grid-template-columns:repeat(2,1fr)}}`}</style>
+      <div className="bill-stats">
         <Stat
           label="Revenue"
           value={`$${revenue.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -2927,30 +3073,48 @@ function Billing() {
           color="var(--red)"
         />
       </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        {["all", "sent", "paid", "partially_paid", "overdue"].map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            style={{
-              padding: "5px 12px",
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 500,
-              cursor: "pointer",
-              background: filter === s ? "var(--a2)" : "var(--bg3)",
-              color: filter === s ? "#fff" : "var(--text2)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            {s === "all"
-              ? "All"
-              : s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-          </button>
-        ))}
-        <div style={{ flex: 1 }} />
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            overflow: "auto",
+            flex: 1,
+            paddingBottom: 2,
+          }}
+        >
+          {["all", "sent", "paid", "partially_paid", "overdue"].map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: "pointer",
+                background: filter === s ? "var(--a2)" : "var(--bg3)",
+                color: filter === s ? "#fff" : "var(--text2)",
+                border: "1px solid var(--border)",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {s === "all"
+                ? "All"
+                : s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+            </button>
+          ))}
+        </div>
         <Btn color="green" onClick={() => setShowForm(true)}>
-          + Create Invoice
+          + Invoice
         </Btn>
       </div>
       <Card style={{ padding: 0, overflow: "hidden" }}>
@@ -2985,25 +3149,9 @@ function Billing() {
               },
             },
             {
-              label: "Date",
-              render: (r) => (
-                <span style={{ fontFamily: "var(--mono)", fontSize: 12 }}>
-                  {r.date}
-                </span>
-              ),
-            },
-            {
               label: "Total",
               render: (r) => (
                 <span style={{ fontWeight: 600 }}>${r.total.toFixed(2)}</span>
-              ),
-            },
-            {
-              label: "Paid",
-              render: (r) => (
-                <span style={{ color: "var(--green)", fontWeight: 500 }}>
-                  ${r.paid.toFixed(2)}
-                </span>
               ),
             },
             {
@@ -3059,10 +3207,9 @@ function Billing() {
                 onClick={() => {
                   if (!form.patientId)
                     return showToast("Patient required", "error");
-                  const { sub, tax, total } = calcTotal();
-                  const num = "INV-" + (10006 + data.invoices.length);
+                  const { total } = calcTotal();
                   addItem("invoices", {
-                    number: num,
+                    number: "INV-" + (10006 + data.invoices.length),
                     patientId: form.patientId,
                     status: "sent",
                     total,
@@ -3112,7 +3259,7 @@ function Billing() {
                   key={i}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 60px 80px 28px",
+                    gridTemplateColumns: "1fr 56px 76px 28px",
                     gap: 7,
                     marginBottom: 7,
                     alignItems: "end",
@@ -3305,7 +3452,7 @@ function Pharmacy() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -3328,7 +3475,14 @@ function Pharmacy() {
           {lowStock.map((m) => m.name).join(", ")}
         </div>
       )}
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
         {["medicines", "prescriptions"].map((t) => (
           <button
             key={t}
@@ -3348,7 +3502,7 @@ function Pharmacy() {
           </button>
         ))}
         {tab === "medicines" && (
-          <div style={{ position: "relative", marginLeft: 8 }}>
+          <div style={{ position: "relative" }}>
             <span
               style={{
                 position: "absolute",
@@ -3365,7 +3519,7 @@ function Pharmacy() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              style={{ paddingLeft: 32, width: 220 }}
+              style={{ paddingLeft: 32, width: 180 }}
             />
           </div>
         )}
@@ -3384,10 +3538,6 @@ function Pharmacy() {
                     </div>
                   </div>
                 ),
-              },
-              {
-                label: "Unit",
-                render: (r) => <Badge color="gray">{r.unit}</Badge>,
               },
               {
                 label: "Price",
@@ -3417,7 +3567,7 @@ function Pharmacy() {
                       {r.stock}
                     </span>
                     <span style={{ fontSize: 11, color: "var(--text3)" }}>
-                      / {r.reorder} min
+                      /{r.reorder}
                     </span>
                   </div>
                 ),
@@ -3606,7 +3756,7 @@ function Laboratory() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -3614,7 +3764,14 @@ function Laboratory() {
         gap: 14,
       }}
     >
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
         {["orders", "catalog"].map((t) => (
           <button
             key={t}
@@ -3665,16 +3822,9 @@ function Laboratory() {
                   return (
                     <div>
                       <div style={{ fontWeight: 500 }}>{p?.name || "—"}</div>
-                      <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                        {p?.mrn}
-                      </div>
                     </div>
                   );
                 },
-              },
-              {
-                label: "Doctor",
-                render: (r) => <span>{r.doctor || "—"}</span>,
               },
               {
                 label: "Tests",
@@ -3740,7 +3890,7 @@ function Laboratory() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))",
+            gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))",
             gap: 12,
           }}
         >
@@ -3835,7 +3985,7 @@ function Laboratory() {
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{t.name}</div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{t.name}</div>
                   <div
                     style={{
                       fontSize: 11,
@@ -3906,13 +4056,8 @@ function Laboratory() {
           }
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 12,
-              }}
-            >
+            <style>{`.lab-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}@media(max-width:520px){.lab-top{grid-template-columns:1fr}}.test-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}@media(max-width:400px){.test-grid{grid-template-columns:1fr}}`}</style>
+            <div className="lab-top">
               <Inp
                 label="Patient"
                 value={form.patientId}
@@ -3950,13 +4095,7 @@ function Laboratory() {
               >
                 Select Tests <span style={{ color: "var(--red)" }}>*</span>
               </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 6,
-                }}
-              >
+              <div className="test-grid">
                 {allTests.map((code) => (
                   <label
                     key={code}
@@ -4008,7 +4147,7 @@ function Staff() {
   return (
     <div
       style={{
-        padding: 20,
+        padding: 16,
         overflowY: "auto",
         flex: 1,
         display: "flex",
@@ -4016,13 +4155,8 @@ function Staff() {
         gap: 14,
       }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3,1fr)",
-          gap: 14,
-        }}
-      >
+      <style>{`.staff-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media(max-width:480px){.staff-stats{grid-template-columns:repeat(2,1fr)}}`}</style>
+      <div className="staff-stats">
         <Stat label="Total Staff" value={data.staff.length} icon="👥" />
         <Stat
           label="Active"
@@ -4041,28 +4175,16 @@ function Staff() {
         <Tbl
           cols={[
             {
-              label: "ID",
-              render: (r) => (
-                <span
-                  style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: 12,
-                    color: "var(--text3)",
-                  }}
-                >
-                  {r.empId}
-                </span>
-              ),
-            },
-            {
               label: "Name",
               render: (r) => (
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                  <Avatar name={r.name} size={30} />
+                  <Avatar name={r.name} size={28} />
                   <div>
-                    <div style={{ fontWeight: 500 }}>{r.name}</div>
+                    <div style={{ fontWeight: 500, fontSize: 13 }}>
+                      {r.name}
+                    </div>
                     <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                      {r.email}
+                      {r.empId}
                     </div>
                   </div>
                 </div>
@@ -4072,14 +4194,9 @@ function Staff() {
               label: "Role",
               render: (r) => <Badge color="purple">{r.role}</Badge>,
             },
-            { label: "Department", render: (r) => <span>{r.dept}</span> },
             {
-              label: "Phone",
-              render: (r) => (
-                <span style={{ fontFamily: "var(--mono)", fontSize: 12 }}>
-                  {r.phone}
-                </span>
-              ),
+              label: "Dept",
+              render: (r) => <span style={{ fontSize: 12 }}>{r.dept}</span>,
             },
             {
               label: "Status",
@@ -4208,7 +4325,7 @@ const PAGES = {
 };
 
 function AppInner() {
-  const { page } = useApp();
+  const { page, sidebarOpen, setSidebarOpen } = useApp();
   const P = PAGES[page] || Dashboard;
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
@@ -4219,21 +4336,52 @@ function AppInner() {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          minWidth: 0,
         }}
       >
+        {/* Header */}
         <div
           style={{
             height: 52,
-            padding: "0 20px",
+            padding: "0 16px",
             borderBottom: "1px solid var(--border)",
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: 10,
             background: "var(--bg2)",
             flexShrink: 0,
           }}
         >
-          <h1 style={{ fontSize: 15, fontWeight: 700, flex: 1 }}>
+          {/* Hamburger — shown only on mobile via CSS */}
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setSidebarOpen(true)}
+            style={{
+              background: "none",
+              color: "var(--text2)",
+              fontSize: 20,
+              lineHeight: 1,
+              padding: "4px 6px",
+              borderRadius: 6,
+              border: "1px solid var(--border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            ☰
+          </button>
+          <h1
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              flex: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {TITLES[page] || "Clinivanta"}
           </h1>
           <Badge color="blue">ADMIN</Badge>
@@ -4242,7 +4390,26 @@ function AppInner() {
               fontSize: 11,
               color: "var(--text3)",
               fontFamily: "var(--mono)",
+              display: "none",
+              flexShrink: 0,
             }}
+            className="date-label"
+          >
+            {new Date().toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              color: "var(--text3)",
+              fontFamily: "var(--mono)",
+              flexShrink: 0,
+            }}
+            style2="display:none"
+            className="date-label-full"
           >
             {new Date().toLocaleDateString("en-GB", {
               weekday: "short",
@@ -4251,6 +4418,7 @@ function AppInner() {
               year: "numeric",
             })}
           </span>
+          <style>{`@media(min-width:600px){.date-label-full{display:block!important}}`}</style>
         </div>
         <div
           style={{
@@ -4258,6 +4426,7 @@ function AppInner() {
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
+            minWidth: 0,
           }}
         >
           <P />
