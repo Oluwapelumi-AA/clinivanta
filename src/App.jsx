@@ -552,7 +552,7 @@ function Provider({ children }) {
               toast.type === "error"
                 ? "rgba(248,81,73,.15)"
                 : "rgba(63,185,80,.15)",
-            border: `1px solid ₦{toast.type==="error"?"rgba(248,81,73,.4)":"rgba(63,185,80,.4)"}`,
+            border: `1px solid ${toast.type === "error" ? "rgba(248,81,73,.4)" : "rgba(63,185,80,.4)"}`,
             borderRadius: 10,
             padding: "11px 18px",
             display: "flex",
@@ -1339,15 +1339,15 @@ function Dashboard() {
         <Stat
           label="Today's Appts"
           value={todayA.length}
-          sub={`₦{todayA.filter(a=>a.status==="completed").length} completed`}
+          sub={`${todayA.filter((a) => a.status === "completed").length} completed`}
           icon="📅"
           color="var(--green)"
           onClick={() => setPage("appointments")}
         />
         <Stat
           label="Revenue"
-          value={`₦₦{revenue.toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2})}`}
-          sub={`₦₦{outstanding.toFixed(0)} outstanding`}
+          value={`₦${revenue.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          sub={`₦${outstanding.toFixed(0)} outstanding`}
           icon="💳"
           color="var(--purple)"
           onClick={() => setPage("billing")}
@@ -1404,7 +1404,7 @@ function Dashboard() {
                     height: 26,
                     borderRadius: "50%",
                     background: (sc[a.status] || "#888") + "22",
-                    border: `1.5px solid ₦{sc[a.status]||"#888"}`,
+                    border: `1.5px solid ${sc[a.status] || "#888"}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1458,7 +1458,7 @@ function Dashboard() {
                   color: "#e6edf3",
                   fontSize: 12,
                 }}
-                formatter={(v) => [`₦₦{v.toLocaleString()}`, "Revenue"]}
+                formatter={(v) => [`₦${v.toLocaleString()}`, "Revenue"]}
               />
               <Bar dataKey="v" fill="#1f6feb" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -1693,7 +1693,7 @@ function Patients() {
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text3)" }}>
                     {selected.gender}
-                    {age(selected.dob) && ` · ₦{age(selected.dob)} yrs`}
+                    {age(selected.dob) && ` · ${age(selected.dob)} yrs`}
                   </div>
                   <div
                     style={{
@@ -1908,7 +1908,7 @@ function Patients() {
                   <div style={{ fontWeight: 500 }}>{r.name}</div>
                   <div style={{ fontSize: 11, color: "var(--text3)" }}>
                     {r.gender}
-                    {age(r.dob) && ` · ₦{age(r.dob)} yrs`}
+                    {age(r.dob) && ` · ${age(r.dob)} yrs`}
                   </div>
                 </div>
               ),
@@ -2253,7 +2253,7 @@ function Appointments() {
               required
               options={data.patients.map((p) => ({
                 value: p.id,
-                label: `₦{p.name} (₦{p.mrn})`,
+                label: `${p.name} (${p.mrn})`,
               }))}
             />
             <Inp
@@ -2263,7 +2263,7 @@ function Appointments() {
               required
               options={data.doctors.map((d) => ({
                 value: d.id,
-                label: `₦{d.name} — ₦{d.spec} (₦₦{d.fee})`,
+                label: `${d.name} — ${d.spec} (₦${d.fee})`,
               }))}
             />
             <style>{`.appt-dt{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:400px){.appt-dt{grid-template-columns:1fr}}`}</style>
@@ -2411,7 +2411,7 @@ function Queue() {
                       padding: "9px 12px",
                       borderRadius: 8,
                       background: isAct ? "rgba(88,166,255,.07)" : "var(--bg3)",
-                      border: `1px solid ₦{isAct?"rgba(88,166,255,.3)":"var(--border)"}`,
+                      border: `1px solid ${isAct ? "rgba(88,166,255,.3)" : "var(--border)"}`,
                       flexWrap: "wrap",
                     }}
                   >
@@ -2421,7 +2421,7 @@ function Queue() {
                         height: 28,
                         borderRadius: "50%",
                         background: (sc[a.status] || "#888") + "22",
-                        border: `2px solid ₦{sc[a.status]||"#888"}`,
+                        border: `2px solid ${sc[a.status] || "#888"}`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -2680,7 +2680,7 @@ function Records() {
                 required
                 options={data.patients.map((p) => ({
                   value: p.id,
-                  label: `₦{p.name} (₦{p.mrn})`,
+                  label: `${p.name} (${p.mrn})`,
                 }))}
               />
               <Inp
@@ -2855,7 +2855,7 @@ function Doctors() {
                     background: d.available
                       ? "rgba(63,185,80,.12)"
                       : "var(--bg3)",
-                    border: `2px solid ₦{d.available?"var(--green)":"var(--border)"}`,
+                    border: `2px solid ${d.available ? "var(--green)" : "var(--border)"}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2902,9 +2902,9 @@ function Doctors() {
                 }}
               >
                 {[
-                  ["Exp", `₦{d.exp}y`],
-                  ["Fee", `₦₦{d.fee}`],
-                  ["Today", `₦{cnt} appts`],
+                  ["Exp", `${d.exp}y`],
+                  ["Fee", `₦${d.fee}`],
+                  ["Today", `${cnt} appts`],
                 ].map(([l, v]) => (
                   <div
                     key={l}
@@ -3050,13 +3050,13 @@ function Billing() {
       <div className="bill-stats">
         <Stat
           label="Revenue"
-          value={`₦₦{revenue.toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2})}`}
+          value={`₦${revenue.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon="💰"
           color="var(--green)"
         />
         <Stat
           label="Outstanding"
-          value={`₦₦{outstanding.toFixed(2)}`}
+          value={`₦${outstanding.toFixed(2)}`}
           icon="⏳"
           color="var(--yellow)"
         />
@@ -3233,7 +3233,7 @@ function Billing() {
               required
               options={data.patients.map((p) => ({
                 value: p.id,
-                label: `₦{p.name} (₦{p.mrn})`,
+                label: `${p.name} (${p.mrn})`,
               }))}
             />
             <div
@@ -3363,7 +3363,7 @@ function Billing() {
       )}
       {payInv && (
         <Modal
-          title={`Pay — ₦{payInv.number}`}
+          title={`Pay — ${payInv.number}`}
           onClose={() => setPayInv(null)}
           width={380}
           footer={
@@ -3398,9 +3398,9 @@ function Billing() {
             }}
           >
             {[
-              ["Total", `₦₦{payInv.total.toFixed(2)}`],
-              ["Paid", `₦₦{payInv.paid.toFixed(2)}`],
-              ["Balance", `₦₦{(payInv.total-payInv.paid).toFixed(2)}`],
+              ["Total", `₦${payInv.total.toFixed(2)}`],
+              ["Paid", `₦${payInv.paid.toFixed(2)}`],
+              ["Balance", `₦${(payInv.total - payInv.paid).toFixed(2)}`],
             ].map(([l, v]) => (
               <div
                 key={l}
@@ -3841,11 +3841,11 @@ function Laboratory() {
                             ? "rgba(248,81,73,.12)"
                             : "var(--bg3)",
                           color: t.abnormal ? "var(--red)" : "var(--text2)",
-                          border: `1px solid ₦{t.abnormal?"rgba(248,81,73,.3)":"var(--border)"}`,
+                          border: `1px solid ${t.abnormal ? "rgba(248,81,73,.3)" : "var(--border)"}`,
                         }}
                       >
                         {t.code}
-                        {t.result ? `: ₦{t.result}` : ""}
+                        {t.result ? `: ${t.result}` : ""}
                       </span>
                     ))}
                   </div>
@@ -4065,7 +4065,7 @@ function Laboratory() {
                 required
                 options={data.patients.map((p) => ({
                   value: p.id,
-                  label: `₦{p.name} (₦{p.mrn})`,
+                  label: `${p.name} (${p.mrn})`,
                 }))}
               />
               <Inp
@@ -4108,7 +4108,7 @@ function Laboratory() {
                       background: form.tests.includes(code)
                         ? "rgba(88,166,255,.1)"
                         : "var(--bg3)",
-                      border: `1px solid ₦{form.tests.includes(code)?"var(--accent)":"var(--border)"}`,
+                      border: `1px solid ${form.tests.includes(code) ? "var(--accent)" : "var(--border)"}`,
                       cursor: "pointer",
                       fontSize: 13,
                     }}
@@ -4215,7 +4215,7 @@ function Staff() {
                   onClick={() => {
                     updateItem("staff", r.id, { active: !r.active });
                     showToast(
-                      `₦{r.name} ₦{r.active?"deactivated":"activated"}`,
+                      `${r.name} ${r.active ? "deactivated" : "activated"}`,
                     );
                   }}
                 >
